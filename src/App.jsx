@@ -1,11 +1,10 @@
-
 import React, { useState } from 'react'
 import { Calendar, MapPin, Clock, Phone, Share2, Download, CheckCircle2, Info } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Card, CardContent } from './ui/card.jsx'
 import { Button } from './ui/button.jsx'
 
-const FORM_ACTION = '#' // replace with Formspree/Netlify when ready
+const FORM_ACTION = 'https://formspree.io/f/xldlzlpq' // Linked to Formspree
 
 function InfoCard({ icon: Icon, title, value }) {
   return (
@@ -71,9 +70,11 @@ function PosterMockup() {
 
 export default function App() {
   const [sent, setSent] = useState(false)
+  const [rol, setRol] = useState('')
 
   return (
     <div className="min-h-screen bg-stone-50 text-stone-900">
+      {/* --- HEADER --- */}
       <header className="sticky top-0 z-50 backdrop-blur border-b border-stone-200 bg-white/70">
         <nav className="mx-auto max-w-6xl px-4 sm:px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -89,6 +90,7 @@ export default function App() {
         </nav>
       </header>
 
+      {/* --- HERO --- */}
       <section className="relative overflow-hidden">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 py-16 sm:py-24 grid lg:grid-cols-2 gap-10 items-center">
           <div>
@@ -127,6 +129,7 @@ export default function App() {
         </div>
       </section>
 
+      {/* --- INFO --- */}
       <section id="info" className="bg-white border-y border-stone-200">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 py-14 grid md:grid-cols-3 gap-6">
           <Bullet title="Qué es" text="Sesiones dinámicas con ideas prácticas para el día a día en casa y en el aula." />
@@ -135,35 +138,7 @@ export default function App() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 sm:px-6 py-14">
-        <Card className="rounded-2xl shadow-sm">
-          <CardContent className="p-6 sm:p-8 grid md:grid-cols-[auto,1fr] gap-6 items-center">
-            <div className="h-16 w-16 rounded-2xl bg-teal-600 text-white flex items-center justify-center font-bold text-xl">ZW</div>
-            <div>
-              <p className="text-sm uppercase tracking-wider text-stone-500">Impartido por</p>
-              <h3 className="text-2xl font-bold tracking-tight">Zhinuzh Watson</h3>
-              <p className="mt-1 text-stone-700">Experta en temas educativos y formadora de familias y docentes.</p>
-            </div>
-          </CardContent>
-        </Card>
-      </section>
-
-      <section id="mapa" className="bg-white border-y border-stone-200">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 py-14">
-          <h3 className="text-xl font-semibold tracking-tight">Ubicación</h3>
-          <p className="text-stone-600">Centro Cívico de Parquesol · Valladolid</p>
-          <div className="mt-4 aspect-video w-full overflow-hidden rounded-2xl border border-stone-200">
-            <iframe
-              title="Mapa Centro Cívico de Parquesol (Valladolid)"
-              className="h-full w-full"
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              src="https://www.google.com/maps?q=Centro%20C%C3%ADvico%20Parquesol%2C%20Valladolid&output=embed"
-            />
-          </div>
-        </div>
-      </section>
-
+      {/* --- FORM --- */}
       <section id="inscripcion" className="mx-auto max-w-3xl px-4 sm:px-6 py-16">
         <div className="mx-auto max-w-xl text-center">
           <h3 className="text-2xl font-bold tracking-tight">Reserva tu plaza</h3>
@@ -173,27 +148,62 @@ export default function App() {
           action={FORM_ACTION}
           method="POST"
           className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2"
-          onSubmit={(e) => { if (FORM_ACTION === '#') e.preventDefault(); setSent(true) }}
+          onSubmit={() => setSent(true)}
         >
           <input name="nombre" required placeholder="Nombre y apellidos" className="rounded-2xl border border-stone-300 px-4 py-3 outline-none focus:ring-2 focus:ring-teal-600 sm:col-span-2" />
           <input name="email" type="email" required placeholder="Correo electrónico" className="rounded-2xl border border-stone-300 px-4 py-3 outline-none focus:ring-2 focus:ring-teal-600" />
           <input name="telefono" type="tel" placeholder="Teléfono" className="rounded-2xl border border-stone-300 px-4 py-3 outline-none focus:ring-2 focus:ring-teal-600" />
-          <input name="asistencia" type="text" placeholder="Primer martes previsto (opcional)" className="rounded-2xl border border-stone-300 px-4 py-3 outline-none focus:ring-2 focus:ring-teal-600 sm:col-span-2" />
+
+          {/* Dropdown for role */}
+          <select
+            name="rol"
+            value={rol}
+            onChange={(e) => setRol(e.target.value)}
+            required
+            className="rounded-2xl border border-stone-300 px-4 py-3 outline-none focus:ring-2 focus:ring-teal-600 sm:col-span-2"
+          >
+            <option value="">Seleccione una opción</option>
+            <option value="Padre">Padre/Madre</option>
+            <option value="Maestro">Maestro/a</option>
+            <option value="Educador">Educador/a</option>
+            <option value="Otro">Otro</option>
+          </select>
+
+          {/* Conditional fields */}
+          {(rol === 'Padre') && (
+            <input
+              name="edad_hijos"
+              placeholder="Edad de los hijos/as"
+              className="rounded-2xl border border-stone-300 px-4 py-3 outline-none focus:ring-2 focus:ring-teal-600 sm:col-span-2"
+            />
+          )}
+
+          {rol === 'Otro' && (
+            <input
+              name="rol_otro"
+              placeholder="Por favor, explique"
+              className="rounded-2xl border border-stone-300 px-4 py-3 outline-none focus:ring-2 focus:ring-teal-600 sm:col-span-2"
+            />
+          )}
+
           <label className="sm:col-span-2 flex items-start gap-3 text-sm text-stone-600">
             <input type="checkbox" required className="mt-1" />
             Acepto ser contactada/o para confirmar mi inscripción.
           </label>
+
           <div className="sm:col-span-2 flex items-center gap-3">
             <Button type="submit" className="rounded-2xl px-5">Enviar inscripción</Button>
             <a href="tel:+34657683223" className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl border border-stone-300 hover:bg-stone-100"><Phone className="h-4 w-4"/> 657 683 223</a>
             <a href="#" className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl border border-stone-300 hover:bg-stone-100"><Share2 className="h-4 w-4"/> Compartir</a>
           </div>
+
           {sent && (
             <p className="sm:col-span-2 mt-2 inline-flex items-center gap-2 text-teal-700"><CheckCircle2 className="h-5 w-5"/> ¡Gracias! Tu mensaje ha sido enviado.</p>
           )}
         </form>
       </section>
 
+      {/* --- FOOTER --- */}
       <footer className="border-t border-stone-200 bg-white">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-sm text-stone-600">© {new Date().getFullYear()} Curso para Padres y Educadores</p>
