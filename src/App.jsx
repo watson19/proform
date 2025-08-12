@@ -193,7 +193,7 @@ export default function App() {
 
           <div className="sm:col-span-2 flex items-center gap-3">
             <Button type="submit" className="rounded-2xl px-5">Enviar inscripción</Button>
-            <a href="tel:+34657683223" className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl border border-stone-300 hover:bg-stone-100"><Phone className="h-4 w-4"/> 657 683 223</a>
+            <a href="tel:+34657683224" className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl border border-stone-300 hover:bg-stone-100"><Phone className="h-4 w-4"/> 657 683 223</a>
             <a href="#" className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl border border-stone-300 hover:bg-stone-100"><Share2 className="h-4 w-4"/> Compartir</a>
           </div>
 
