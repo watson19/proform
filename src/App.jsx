@@ -105,9 +105,9 @@ export default function App() {
             </p>
 
             <dl className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <InfoCard icon={Calendar} title="Cuándo" value="Todos los martes" />
-              <InfoCard icon={Clock} title="Horario" value="12:30 – 13:45" />
-              <InfoCard icon={MapPin} title="Lugar" value="Centro Cívico de Parquesol" />
+              <InfoCard icon={Calendar} title="Cuándo" value="Todos los martes, desde 21-10-2025" />
+              <InfoCard icon={Clock} title="Horario" value="12:00 – 13:30" />
+              <InfoCard icon={MapPin} title="Lugar" value="Centro Cívico de Parquesol (Valladolid)" />
             </dl>
 
             <div className="mt-8 flex flex-wrap gap-3">
