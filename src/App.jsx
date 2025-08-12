@@ -117,7 +117,7 @@ export default function App() {
               <a href="#mapa" className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl border border-stone-300 hover:bg-stone-100">
                 <MapPin className="h-4 w-4"/> Cómo llegar
               </a>
-              <a href="tel:+34657683223" className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl border border-stone-300 hover:bg-stone-100">
+              <a href="tel:+34657683224" className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl border border-stone-300 hover:bg-stone-100">
                 <Phone className="h-4 w-4"/> 657 683 223
               </a>
             </div>
@@ -164,8 +164,7 @@ export default function App() {
           >
             <option value="">Seleccione una opción</option>
             <option value="Padre">Padre/Madre</option>
-            <option value="Maestro">Maestro/a</option>
-            <option value="Educador">Educador/a</option>
+            <option value="Maestro">Maestro/a o Educador/a</option>
             <option value="Otro">Otro</option>
           </select>
 
@@ -181,7 +180,7 @@ export default function App() {
           {rol === 'Otro' && (
             <input
               name="rol_otro"
-              placeholder="Por favor, explique"
+              placeholder="Si elige Otro, indique interés"
               className="rounded-2xl border border-stone-300 px-4 py-3 outline-none focus:ring-2 focus:ring-teal-600 sm:col-span-2"
             />
           )}
