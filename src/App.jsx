@@ -51,15 +51,15 @@ function PosterMockup() {
           <div className="mt-6 grid grid-cols-2 gap-3 text-sm">
             <div className="bg-orange-100 rounded-xl p-3">
               <div className="font-semibold">Cuándo</div>
-              <div>Todos los martes</div>
+              <div>Todos los martes, desde 21-10-2025</div>
             </div>
             <div className="bg-teal-100 rounded-xl p-3">
               <div className="font-semibold">Horario</div>
-              <div>12:30 – 13:45</div>
+              <div>12:00h – 13:30h</div>
             </div>
             <div className="bg-stone-100 rounded-xl p-3 col-span-2">
               <div className="font-semibold">Lugar</div>
-              <div>Centro Cívico de Parquesol</div>
+              <div>Centro Cívico de Parquesol (Valladolid)</div>
             </div>
           </div>
           <div className="mt-auto pt-4 border-t text-sm">Inscripciones en el Centro Cívico · Más información 657 683 223 (solo mañanas)</div>
@@ -154,7 +154,7 @@ export default function App() {
           <p className="text-stone-600">Centro Cívico de Parquesol · Valladolid</p>
           <div className="mt-4 aspect-video w-full overflow-hidden rounded-2xl border border-stone-200">
             <iframe
-              title="Mapa Centro Cívico de Parquesol"
+              title="Mapa Centro Cívico de Parquesol (Valladolid)"
               className="h-full w-full"
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
