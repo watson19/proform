@@ -4,7 +4,13 @@ import { motion } from 'framer-motion'
 import { Card, CardContent } from './ui/card.jsx'
 import { Button } from './ui/button.jsx'
 
-const FORM_ACTION = 'https://formspree.io/f/xldlzlpq' // Linked to Formspree
+const FORM_ACTION = 'https://formspree.io/f/xldlzlpq'
+
+// WhatsApp constants
+const WHATSAPP_NUMBER_INTL = "34657683224";
+const WHATSAPP_VISIBLE = "657 683 224";
+const WHATSAPP_MESSAGE = encodeURIComponent("Hola, tengo interés en apuntarme a este curso en el Centro Cívico. Gracias.");
+const WHATSAPP_LINK = `https://wa.me/${WHATSAPP_NUMBER_INTL}?text=${WHATSAPP_MESSAGE}`;
 
 function InfoCard({ icon: Icon, title, value }) {
   return (
@@ -61,7 +67,12 @@ function PosterMockup() {
               <div>Centro Cívico de Parquesol (Valladolid)</div>
             </div>
           </div>
-          <div className="mt-auto pt-4 border-t text-sm">Inscripciones en el Centro Cívico · Más información 657 683 223 (solo mañanas)</div>
+          <div className="mt-auto pt-4 border-t text-sm">
+            Inscripciones en el Centro Cívico · Más información 
+            <a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer" className="text-teal-700 hover:underline">
+              {' '}{WHATSAPP_VISIBLE} (solo mañanas)
+            </a>
+          </div>
         </div>
       </div>
     </motion.div>
@@ -73,7 +84,7 @@ export default function App() {
   const [rol, setRol] = useState('')
 
   return (
-    <div className="min-h-screen bg-stone-50 text-stone-900">
+    <div className="min-h-screen bg-stone-50 text-stone-900 relative">
       {/* --- HEADER --- */}
       <header className="sticky top-0 z-50 backdrop-blur border-b border-stone-200 bg-white/70">
         <nav className="mx-auto max-w-6xl px-4 sm:px-6 py-3 flex items-center justify-between">
@@ -117,12 +128,12 @@ export default function App() {
               <a href="#mapa" className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl border border-stone-300 hover:bg-stone-100">
                 <MapPin className="h-4 w-4"/> Cómo llegar
               </a>
-              <a href="tel:+34657683224" className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl border border-stone-300 hover:bg-stone-100">
-                <Phone className="h-4 w-4"/> 657 683 223
+              <a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl border border-stone-300 hover:bg-stone-100">
+                <Phone className="h-4 w-4"/> {WHATSAPP_VISIBLE}
               </a>
             </div>
 
-            <p className="mt-3 text-sm text-stone-600">Inscripciones en el Centro Cívico. Más información por teléfono (solo mañanas).</p>
+            <p className="mt-3 text-sm text-stone-600">Inscripciones en el Centro Cívico. Más información por WhatsApp (solo mañanas).</p>
           </div>
 
           <PosterMockup />
@@ -192,7 +203,9 @@ export default function App() {
 
           <div className="sm:col-span-2 flex items-center gap-3">
             <Button type="submit" className="rounded-2xl px-5">Enviar inscripción</Button>
-            <a href="tel:+34657683224" className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl border border-stone-300 hover:bg-stone-100"><Phone className="h-4 w-4"/> 657 683 223</a>
+            <a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl border border-stone-300 hover:bg-stone-100">
+              <Phone className="h-4 w-4"/> {WHATSAPP_VISIBLE}
+            </a>
             <a href="#" className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl border border-stone-300 hover:bg-stone-100"><Share2 className="h-4 w-4"/> Compartir</a>
           </div>
 
@@ -212,6 +225,25 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* --- FLOATING WHATSAPP BUTTON --- */}
+<a
+  href={WHATSAPP_LINK}
+  target="_blank"
+  rel="noopener noreferrer"
+  className="fixed bottom-5 right-5 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg p-4 flex items-center justify-center z-50"
+  title="Enviar WhatsApp"
+>
+  {/* WhatsApp SVG Logo */}
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 32 32"
+    fill="currentColor"
+    className="h-6 w-6"
+  >
+    <path d="M16.001 3.2c-7.077 0-12.8 5.723-12.8 12.8 0 2.258.593 4.464 1.715 6.4l-1.829 6.676 6.851-1.8c1.832 1 3.906 1.524 6.063 1.524h.001c7.077 0 12.8-5.723 12.8-12.8 0-3.417-1.332-6.627-3.754-9.046S19.418 3.2 16.001 3.2zm0 23.2c-1.826 0-3.603-.49-5.155-1.42l-.369-.217-4.065 1.07 1.084-3.96-.239-.384C6.472 20.024 5.6 18.052 5.6 16c0-5.746 4.655-10.4 10.401-10.4 2.776 0 5.386 1.081 7.348 3.043A10.33 10.33 0 0 1 26.4 16c0 5.746-4.654 10.4-10.399 10.4zm5.937-7.8c-.326-.163-1.926-.95-2.225-1.057-.298-.11-.515-.163-.731.163-.217.326-.84 1.057-1.029 1.274-.188.217-.376.244-.702.081-.326-.163-1.376-.505-2.62-1.611-.968-.861-1.622-1.921-1.811-2.247-.188-.326-.02-.502.142-.665.146-.145.326-.376.489-.564.163-.188.217-.326.326-.544.109-.217.054-.407-.027-.57-.081-.163-.731-1.758-1.002-2.414-.263-.63-.53-.545-.731-.555l-.624-.011c-.217 0-.57.081-.869.407-.298.326-1.14 1.113-1.14 2.713 0 1.6 1.168 3.145 1.331 3.362.163.217 2.3 3.52 5.56 4.935.777.335 1.382.535 1.854.684.779.248 1.487.213 2.047.13.625-.093 1.926-.786 2.198-1.545.272-.758.272-1.408.19-1.545-.081-.163-.298-.244-.624-.407z"/>
+  </svg>
+</a>
     </div>
   )
 }
