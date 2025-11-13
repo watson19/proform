@@ -71,7 +71,7 @@ function PosterMockup() {
           <div className="mt-6 grid grid-cols-2 gap-3 text-sm">
             <div className="bg-orange-100 rounded-xl p-3">
               <div className="font-semibold">Cuándo</div>
-              <div>Todos los martes. Comienzo: 21-10-25</div>
+              <div>Todos los martes.</div>
             </div>
             <div className="bg-teal-100 rounded-xl p-3">
               <div className="font-semibold">Horario</div>
@@ -133,7 +133,7 @@ export default function App() {
             </p>
 
             <dl className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <InfoCard icon={Calendar} title="Cuándo" value="Todos los martes. Comienzo: 21-10-25" />
+              <InfoCard icon={Calendar} title="Cuándo" value="Todos los martes." />
               <InfoCard icon={Clock} title="Horario" value="12:00 – 13:30" />
               <InfoCard icon={MapPin} title="Lugar" value="Centro Cívico de Parquesol (Valladolid)" />
             </dl>
