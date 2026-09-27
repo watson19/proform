@@ -104,7 +104,7 @@ function renderList(){
 }
 async function openStudent(id){
  selected=id;renderList(); const s=students.find(x=>x.id===id); if(!s)return;
- const [p,a,lp,n,er,obj,sum,calls,wb]=await Promise.all([
+ const [p,a,lp,n,er,obj,sum,calls,wb,zr]=await Promise.all([
   sb.from('student_phones').select('*').eq('student_id',id).order('is_primary',{ascending:false}),
   sb.from('ai_access').select('*').eq('student_id',id).maybeSingle(),
   sb.from('learner_profiles').select('*').eq('student_id',id).maybeSingle(),
@@ -113,11 +113,12 @@ async function openStudent(id){
   sb.from('learning_objectives').select('*').eq('student_id',id).order('priority'),
   sb.from('session_summaries').select('*').eq('student_id',id).order('created_at',{ascending:false}).limit(10),
   sb.from('ai_calls').select('*').eq('student_id',id).order('started_at',{ascending:false}).limit(20),
-  sb.from('zoho_writeback_log').select('*').eq('student_id',id).order('requested_at',{ascending:false}).limit(5)
+  sb.from('zoho_writeback_log').select('*').eq('student_id',id).order('requested_at',{ascending:false}).limit(5),
+  sb.from('zoho_student_records').select('*').eq('student_id',id).order('current_class')
  ]);
- renderDetail(s,p.data||[],a.data,lp.data,n.data||[],er.data||[],obj.data||[],sum.data||[],calls.data||[],wb.data||[]);
+ renderDetail(s,p.data||[],a.data,lp.data,n.data||[],er.data||[],obj.data||[],sum.data||[],calls.data||[],wb.data||[],zr.data||[]);
 }
-function renderDetail(s,phones,access,profile,notes,errors,objectives,summaries,calls,writebacks){
+function renderDetail(s,phones,access,profile,notes,errors,objectives,summaries,calls,writebacks,zohoRecords){
  const zoho=s.record_source==='zoho';
  const pendingWriteback=(writebacks||[]).find(x=>x.status==='pending'||x.status==='sent');
  const zphone=(field)=>(phones.find(p=>p.record_source==='zoho'&&p.zoho_field_name===field)?.phone_raw||'');
@@ -126,7 +127,7 @@ function renderDetail(s,phones,access,profile,notes,errors,objectives,summaries,
  <div class="tabpage active" id="t0">
   ${zoho?'<div class="notice">Zoho Creator remains the master record. Changes made here are queued for Zoho first and only return to Dr Watson after Zoho confirms them.</div>':''}
   ${pendingWriteback?`<div class="notice ok"><b>Zoho update ${esc(pendingWriteback.status)}</b><div class="tiny">Requested ${new Date(pendingWriteback.requested_at).toLocaleString()}</div></div>`:''}
-  <div class="rows"><div class="info"><div class="k">Class</div><div class="v">${esc(s.current_class||'—')}</div></div><div class="info"><div class="k">Source</div><div class="v">${esc(s.record_source)}</div></div></div>
+  <div class="rows"><div class="info"><div class="k">Class(es)</div><div class="v">${esc(zoho&&zohoRecords.length?zohoRecords.map(r=>r.current_class).filter(Boolean).join(', '):(s.current_class||'—'))}</div></div><div class="info"><div class="k">Source</div><div class="v">${esc(s.record_source)}${zoho&&zohoRecords.length>1?' · '+zohoRecords.length+' Zoho records':''}</div></div></div>
   ${['owner','admin'].includes(admin.role)?(zoho?`<h3 style="margin-top:18px">Zoho identity & contact</h3>
   <div class="rows">
    <div class="field"><label>First name</label><input id="zfirst" value="${esc(s.first_name||'')}"></div>
