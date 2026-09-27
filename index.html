@@ -87,11 +87,12 @@ async function loadStudents(){
 function renderShell(){
  const active=[...accessMap.values()].filter(x=>x.access_enabled).length;
  const manual=students.filter(x=>x.record_source==='manual').length;
- app.innerHTML=`<div class="top"><div class="brand"><span>Dr Watson</span> <span>Admin</span></div><span class="badge">${esc(admin.role)}</span><div class="spacer"></div><span class="tiny muted">${esc(user.email)}</span><button class="btn ghost small" id="logout">Sign out</button></div>
+ app.innerHTML=`<div class="top"><div class="brand"><span>Dr Watson</span> <span>Admin</span></div><span class="badge">${esc(admin.role)}</span><div class="spacer"></div><span class="tiny muted">${esc(user.email)}</span>${admin.role==='owner'?'<button class="btn ghost small" id="settings">Settings</button>':''}<button class="btn ghost small" id="logout">Sign out</button></div>
  <div class="wrap"><div class="cards"><div class="stat"><span class="muted tiny">Students</span><b>${students.length}</b></div><div class="stat"><span class="muted tiny">AI access enabled</span><b>${active}</b></div><div class="stat"><span class="muted tiny">Zoho synced</span><b>${students.length-manual}</b></div><div class="stat"><span class="muted tiny">Manual</span><b>${manual}</b></div></div>
  <div class="grid"><div class="panel"><div class="panelhead"><input id="search" placeholder="Search students"><button class="btn purple small" id="add">+ Add</button></div><div id="studentList"></div></div>
  <div class="panel" id="detail"><div class="empty">Select a student</div></div></div></div>`;
  document.getElementById('logout').onclick=async()=>{await sb.auth.signOut();loginView()};
+ if(document.getElementById('settings'))document.getElementById('settings').onclick=showSettings;
  document.getElementById('search').oninput=renderList;
  document.getElementById('add').onclick=showAddStudent;
  renderList();
@@ -223,6 +224,38 @@ async function saveProfile(id){
 async function addNote(id){const note=document.getElementById('notetext').value.trim();if(!note)return;const r=await sb.from('student_notes').insert({student_id:id,author_user_id:user.id,note});if(r.error)return alert(r.error.message);await openStudent(id)}
 async function addPhone(id){const raw=document.getElementById('newphone').value,e164=phoneNorm(raw);if(!e164)return alert('Invalid phone number');const type=document.getElementById('phonetype').value;const r=await sb.from('student_phones').insert({student_id:id,phone_e164:e164,phone_raw:raw,phone_type:type,record_source:'manual'});if(r.error)return alert(r.error.message);await openStudent(id)}
 async function deletePhone(pid,sid){if(!confirm('Remove this manual phone number?'))return;const r=await sb.from('student_phones').delete().eq('id',pid);if(r.error)return alert(r.error.message);await openStudent(sid)}
+async function showSettings(){
+ const r=await sb.from('dr_watson_settings').select('*').eq('id',true).single();
+ if(r.error)return alert(r.error.message);
+ const x=r.data;
+ document.getElementById('detail').innerHTML=`<div class="panelhead"><h2 style="margin:0">Dr Watson Settings</h2></div><div class="panelbody">
+ <div class="notice">These are global defaults. A student's individual access settings override them.</div>
+ <div class="rows">
+  <div class="field"><label>Default per-call limit (minutes)</label><input id="gpercall" type="number" min="1" value="${x.default_per_call_limit_seconds!=null?x.default_per_call_limit_seconds/60:''}" placeholder="Blank = no global limit"></div>
+  <div class="field"><label>Default daily limit (minutes)</label><input id="gdaily" type="number" min="0" value="${x.default_daily_limit_seconds!=null?x.default_daily_limit_seconds/60:''}" placeholder="Blank = no global limit"></div>
+  <div class="field"><label>Default monthly limit (minutes)</label><input id="gmonthly" type="number" min="0" value="${x.default_monthly_limit_seconds!=null?x.default_monthly_limit_seconds/60:''}" placeholder="Blank = no global limit"></div>
+  <div class="field"><label>WhatsApp summary after calls</label><select id="gwhatsapp"><option value="true" ${x.whatsapp_summary_enabled?'selected':''}>Enabled</option><option value="false" ${!x.whatsapp_summary_enabled?'selected':''}>Disabled</option></select></div>
+  <div class="field"><label>Retain full call transcripts</label><select id="gtranscripts"><option value="true" ${x.retain_full_transcripts?'selected':''}>Yes</option><option value="false" ${!x.retain_full_transcripts?'selected':''}>No</option></select></div>
+ </div>
+ <button class="btn purple" id="savesettings">Save system settings</button>
+ </div>`;
+ document.getElementById('savesettings').onclick=saveSettings;
+}
+async function saveSettings(){
+ const payload={
+  default_per_call_limit_seconds:minToSec(document.getElementById('gpercall').value),
+  default_daily_limit_seconds:minToSec(document.getElementById('gdaily').value),
+  default_monthly_limit_seconds:minToSec(document.getElementById('gmonthly').value),
+  whatsapp_summary_enabled:document.getElementById('gwhatsapp').value==='true',
+  retain_full_transcripts:document.getElementById('gtranscripts').value==='true',
+  updated_by:user.id,
+  updated_at:new Date().toISOString()
+ };
+ const r=await sb.from('dr_watson_settings').update(payload).eq('id',true);
+ if(r.error)return alert(r.error.message);
+ alert('Dr Watson settings saved.');
+ await showSettings();
+}
 function showAddStudent(){
  document.getElementById('detail').innerHTML=`<div class="panelhead"><h2 style="margin:0">Add manual student</h2></div><div class="panelbody">
  <div class="rows"><div class="field"><label>First name</label><input id="mfirst"></div><div class="field"><label>First surname</label><input id="ms1"></div><div class="field"><label>Second surname</label><input id="ms2"></div><div class="field"><label>Phone</label><input id="mphone"></div><div class="field"><label>Per-call limit (minutes)</label><input id="mlimit" type="number" min="1" value="10"></div></div>
