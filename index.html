@@ -1,12 +1,191 @@
 <!doctype html>
-<html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Curso para Padres y Educadores</title>
-  </head>
-  <body class="bg-stone-50">
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Dr Watson Admin</title>
+  <style>
+    :root{--green:#008000;--purple:#92278F;--bg:#f6f7f8;--ink:#1e2428;--muted:#6b7379;--line:#dfe3e6;--card:#fff;--danger:#b42318}
+    *{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+    button,input,select,textarea{font:inherit} button{cursor:pointer}
+    .top{height:64px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 22px;gap:14px;position:sticky;top:0;z-index:3}
+    .brand{font-weight:800;font-size:20px}.brand span:first-child{color:var(--green)}.brand span:last-child{color:var(--purple)}
+    .spacer{flex:1}.muted{color:var(--muted)} .tiny{font-size:12px}
+    .wrap{max-width:1500px;margin:auto;padding:22px}
+    .login{max-width:430px;margin:10vh auto;background:#fff;padding:30px;border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 36px #0000000c}
+    h1,h2,h3{margin-top:0} h2{font-size:20px}.field{margin:12px 0}.field label{display:block;font-size:12px;font-weight:700;margin-bottom:5px;color:#51585d}
+    input,select,textarea{width:100%;border:1px solid #cdd3d7;border-radius:8px;padding:10px;background:#fff} textarea{min-height:90px;resize:vertical}
+    .btn{border:0;border-radius:8px;padding:10px 14px;font-weight:700;background:var(--green);color:#fff}.btn.purple{background:var(--purple)}.btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}.btn.small{padding:6px 9px;font-size:12px}.btn.danger{background:var(--danger)}
+    .grid{display:grid;grid-template-columns:360px 1fr;gap:18px}.panel{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+    .panelhead{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:center}.panelbody{padding:16px}
+    .student{padding:11px 14px;border-bottom:1px solid #eef0f2;cursor:pointer}.student:hover,.student.active{background:#f1f7f1}
+    .student .name{font-weight:700}.badge{display:inline-block;padding:2px 7px;border-radius:999px;font-size:11px;font-weight:800;background:#edf0f2;color:#4b545a}.badge.zoho{background:#eef6ff;color:#145ea8}.badge.manual{background:#f7edfb;color:#7b2386}.badge.on{background:#e8f5e9;color:#137333}.badge.off{background:#fdecec;color:#a61b1b}
+    .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}.stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px}.stat b{display:block;font-size:25px;margin-top:3px}
+    .tabs{display:flex;gap:5px;border-bottom:1px solid var(--line);padding:0 14px}.tab{padding:11px 10px;border:0;background:none;font-weight:700;color:#666}.tab.active{color:var(--purple);border-bottom:3px solid var(--purple)}
+    .tabpage{display:none;padding:16px}.tabpage.active{display:block}
+    .rows{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.info{border:1px solid #eceff1;border-radius:9px;padding:11px}.info .k{font-size:11px;font-weight:800;color:#777;text-transform:uppercase}.info .v{margin-top:3px}
+    .listitem{border:1px solid #e8ebed;border-radius:9px;padding:10px;margin:8px 0}.flex{display:flex;gap:8px;align-items:center}.right{margin-left:auto}
+    .notice{padding:11px;border-radius:8px;background:#fff7e6;border:1px solid #ffe0a3;margin:10px 0}.ok{background:#eef9ef;border-color:#cbe7cd}
+    .hidden{display:none!important}.empty{color:#7a8288;padding:24px;text-align:center}.source-lock{font-size:12px;color:#8a5b00;margin-top:6px}
+    @media(max-width:900px){.grid{grid-template-columns:1fr}.cards{grid-template-columns:repeat(2,1fr)}.rows{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div id="app"></div>
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.95.0';
+const SUPABASE_URL='https://dkrslxvruwxgredtokxw.supabase.co';
+const SUPABASE_KEY='sb_publishable_50JkkIOab5azBloLYR3lpQ_t56ov2WZ';
+const sb=createClient(SUPABASE_URL,SUPABASE_KEY);
+const app=document.getElementById('app');
+let user=null, admin=null, students=[], accessMap=new Map(), selected=null;
+
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const fullName=s=>[s.first_name,s.first_surname,s.second_surname].filter(Boolean).join(' ');
+const secToMin=s=>s==null?'—':(Number(s)/60).toFixed(Number(s)%60?1:0)+' min';
+const minToSec=m=>m===''||m==null?null:Math.round(Number(m)*60);
+function phoneNorm(raw){let s=String(raw||'').trim().replace(/[()\s.-]/g,'');if(!s)return null;if(s.startsWith('00'))s='+'+s.slice(2);if(s.startsWith('+')){let d=s.slice(1).replace(/\D/g,'');return /^[1-9]\d{7,14}$/.test(d)?'+'+d:null}let d=s.replace(/\D/g,'');if(d.length===9)return '+34'+d;if(d.startsWith('34')&&d.length===11)return '+'+d;if(/^[1-9]\d{7,14}$/.test(d)&&d.length>9)return '+'+d;return null}
+
+function loginView(msg=''){
+ app.innerHTML=`<div class="login"><h1><span style="color:var(--green)">Dr Watson</span> <span style="color:var(--purple)">Admin</span></h1>
+ <p class="muted">Private administration portal for Idiomas Watson.</p>${msg?'<div class="notice">'+esc(msg)+'</div>':''}
+ <div class="field"><label>Email</label><input id="email" type="email" autocomplete="email"></div>
+ <div class="field"><label>Password</label><input id="password" type="password" autocomplete="current-password"></div>
+ <div class="flex"><button class="btn" id="signin">Sign in</button><button class="btn ghost" id="signup">Create account</button></div>
+ <p class="tiny muted">Creating an account does not grant access. An owner must authorise the account.</p></div>`;
+ document.getElementById('signin').onclick=()=>auth(false);
+ document.getElementById('signup').onclick=()=>auth(true);
+}
+async function auth(signup){
+ const email=document.getElementById('email').value.trim(),password=document.getElementById('password').value;
+ if(!email||!password)return loginView('Enter email and password.');
+ const res=signup?await sb.auth.signUp({email,password}):await sb.auth.signInWithPassword({email,password});
+ if(res.error)return loginView(res.error.message);
+ if(signup&&!res.data.session)return loginView('Account created. Check your email to confirm it, then sign in.');
+ await boot();
+}
+async function boot(){
+ const {data:{user:u}}=await sb.auth.getUser(); user=u;
+ if(!user)return loginView();
+ const {data:a}=await sb.from('admin_users').select('*').eq('user_id',user.id).maybeSingle();
+ admin=a;
+ if(!admin||!admin.active){
+   app.innerHTML=`<div class="login"><h2>Account awaiting authorisation</h2><p>You are signed in as <b>${esc(user.email)}</b>, but this account is not yet an authorised Dr Watson administrator.</p><p class="tiny muted">User ID: ${esc(user.id)}</p><button class="btn ghost" id="logout">Sign out</button></div>`;
+   document.getElementById('logout').onclick=async()=>{await sb.auth.signOut();loginView()};
+   return;
+ }
+ await loadStudents(); renderShell();
+}
+async function loadStudents(){
+ const [{data:ss,error:e1},{data:aa,error:e2}]=await Promise.all([
+  sb.from('students').select('id,record_source,zoho_record_id,zoho_student_number,first_name,first_surname,second_surname,current_class,is_adult,zoho_active,created_at').order('first_name'),
+  sb.from('ai_access').select('*')
+ ]);
+ if(e1||e2)throw e1||e2;
+ students=ss||[]; accessMap=new Map((aa||[]).map(x=>[x.student_id,x]));
+}
+function renderShell(){
+ const active=[...accessMap.values()].filter(x=>x.access_enabled).length;
+ const manual=students.filter(x=>x.record_source==='manual').length;
+ app.innerHTML=`<div class="top"><div class="brand"><span>Dr Watson</span> <span>Admin</span></div><span class="badge">${esc(admin.role)}</span><div class="spacer"></div><span class="tiny muted">${esc(user.email)}</span><button class="btn ghost small" id="logout">Sign out</button></div>
+ <div class="wrap"><div class="cards"><div class="stat"><span class="muted tiny">Students</span><b>${students.length}</b></div><div class="stat"><span class="muted tiny">AI access enabled</span><b>${active}</b></div><div class="stat"><span class="muted tiny">Zoho synced</span><b>${students.length-manual}</b></div><div class="stat"><span class="muted tiny">Manual</span><b>${manual}</b></div></div>
+ <div class="grid"><div class="panel"><div class="panelhead"><input id="search" placeholder="Search students"><button class="btn purple small" id="add">+ Add</button></div><div id="studentList"></div></div>
+ <div class="panel" id="detail"><div class="empty">Select a student</div></div></div></div>`;
+ document.getElementById('logout').onclick=async()=>{await sb.auth.signOut();loginView()};
+ document.getElementById('search').oninput=renderList;
+ document.getElementById('add').onclick=showAddStudent;
+ renderList();
+}
+function renderList(){
+ const q=(document.getElementById('search')?.value||'').toLowerCase();
+ const list=students.filter(s=>(fullName(s)+' '+(s.zoho_student_number||'')+' '+(s.current_class||'')).toLowerCase().includes(q));
+ document.getElementById('studentList').innerHTML=list.map(s=>{const a=accessMap.get(s.id);return `<div class="student ${selected===s.id?'active':''}" data-id="${s.id}"><div class="flex"><div class="name">${esc(fullName(s))}</div><span class="badge ${s.record_source} right">${s.record_source}</span></div><div class="tiny muted">${esc(s.current_class||'No class')} · ${a?.access_enabled?'<span class="badge on">AI ON</span>':'<span class="badge off">AI OFF</span>'}</div></div>`}).join('')||'<div class="empty">No students found</div>';
+ document.querySelectorAll('.student').forEach(el=>el.onclick=()=>openStudent(el.dataset.id));
+}
+async function openStudent(id){
+ selected=id;renderList(); const s=students.find(x=>x.id===id); if(!s)return;
+ const [p,a,lp,n,er,obj,sum,calls]=await Promise.all([
+  sb.from('student_phones').select('*').eq('student_id',id).order('is_primary',{ascending:false}),
+  sb.from('ai_access').select('*').eq('student_id',id).maybeSingle(),
+  sb.from('learner_profiles').select('*').eq('student_id',id).maybeSingle(),
+  sb.from('student_notes').select('*,admin_users(display_name)').eq('student_id',id).order('created_at',{ascending:false}),
+  sb.from('learning_errors').select('*').eq('student_id',id).order('last_seen_at',{ascending:false}),
+  sb.from('learning_objectives').select('*').eq('student_id',id).order('priority'),
+  sb.from('session_summaries').select('*').eq('student_id',id).order('created_at',{ascending:false}).limit(10),
+  sb.from('ai_calls').select('*').eq('student_id',id).order('started_at',{ascending:false}).limit(20)
+ ]);
+ renderDetail(s,p.data||[],a.data,lp.data,n.data||[],er.data||[],obj.data||[],sum.data||[],calls.data||[]);
+}
+function renderDetail(s,phones,access,profile,notes,errors,objectives,summaries,calls){
+ const zoho=s.record_source==='zoho';
+ document.getElementById('detail').innerHTML=`<div class="panelhead"><div><h2 style="margin:0">${esc(fullName(s))}</h2><div class="tiny muted">${zoho?'Zoho Creator master record':'Manual Dr Watson student'} ${s.zoho_student_number?'· #'+esc(s.zoho_student_number):''}</div></div><span class="badge ${s.record_source} right">${s.record_source}</span></div>
+ <div class="tabs">${['Overview','Learning','Notes','History'].map((x,i)=>`<button class="tab ${i===0?'active':''}" data-tab="t${i}">${x}</button>`).join('')}</div>
+ <div class="tabpage active" id="t0">
+  ${zoho?'<div class="notice">Name, class and Zoho phone fields are mastered by Zoho Creator. The portal write-back action will be connected next; Dr Watson-specific settings can already be edited here.</div>':''}
+  <div class="rows"><div class="info"><div class="k">Class</div><div class="v">${esc(s.current_class||'—')}</div></div><div class="info"><div class="k">Source</div><div class="v">${esc(s.record_source)}</div></div></div>
+  <h3 style="margin-top:18px">Phone numbers</h3><div id="phones">${phones.map(p=>`<div class="listitem flex"><div><b>${esc(p.phone_e164)}</b><div class="tiny muted">${esc(p.phone_type)} · ${esc(p.record_source)}</div></div>${p.record_source==='manual'&&['owner','admin'].includes(admin.role)?`<button class="btn ghost small right delphone" data-id="${p.id}">Remove</button>`:''}</div>`).join('')||'<div class="muted">No numbers</div>'}</div>
+  ${['owner','admin'].includes(admin.role)?'<div class="flex"><input id="newphone" placeholder="Add manual phone number"><select id="phonetype" style="max-width:120px"><option>mobile</option><option>home</option><option>work</option><option>other</option></select><button class="btn small" id="addphone">Add</button></div>':''}
+  <h3 style="margin-top:18px">AI access & limits</h3>
+  <div class="rows"><div class="field"><label>Access</label><select id="acc"><option value="true" ${access?.access_enabled?'selected':''}>Enabled</option><option value="false" ${!access?.access_enabled?'selected':''}>Blocked</option></select></div>
+  <div class="field"><label>Per-call limit (minutes)</label><input id="percall" type="number" min="1" value="${access?.per_call_limit_seconds?access.per_call_limit_seconds/60:''}"></div>
+  <div class="field"><label>Daily limit (minutes)</label><input id="daily" type="number" min="0" value="${access?.daily_limit_seconds!=null?access.daily_limit_seconds/60:''}"></div>
+  <div class="field"><label>Monthly limit (minutes)</label><input id="monthly" type="number" min="0" value="${access?.monthly_limit_seconds!=null?access.monthly_limit_seconds/60:''}"></div></div>
+  ${['owner','admin'].includes(admin.role)?'<button class="btn" id="saveaccess">Save access settings</button>':''}
+ </div>
+ <div class="tabpage" id="t1">
+   <h3>Learner profile</h3>
+   <div class="rows"><div class="field"><label>CEFR level</label><select id="cefr"><option value="">Unknown</option>${['A1','A2','B1','B2','C1','C2'].map(x=>`<option ${profile?.cefr_level===x?'selected':''}>${x}</option>`).join('')}</select></div>
+   <div class="field"><label>Exam target</label><input id="exam" value="${esc(profile?.exam_target||'')}"></div></div>
+   <div class="field"><label>Primary objective</label><textarea id="objective">${esc(profile?.primary_objective||'')}</textarea></div>
+   <div class="field"><label>Profile summary / foundational context</label><textarea id="profilesummary">${esc(profile?.profile_summary||'')}</textarea></div>
+   ${['owner','admin','teacher'].includes(admin.role)?'<button class="btn" id="saveprofile">Save learner profile</button>':''}
+   <h3 style="margin-top:22px">Objectives</h3>${objectives.map(o=>`<div class="listitem"><b>${esc(o.objective)}</b><div class="tiny muted">${esc(o.status)} · priority ${o.priority} · ${esc(o.source)}</div></div>`).join('')||'<div class="muted">No objectives yet</div>'}
+   <h3 style="margin-top:22px">Recurring errors</h3>${errors.map(e=>`<div class="listitem"><b>${esc(e.incorrect_form)} → ${esc(e.correct_form)}</b><div class="tiny muted">${esc(e.category||'')} · ${e.occurrence_count} occurrences · ${esc(e.status)}</div></div>`).join('')||'<div class="muted">No recurring errors yet</div>'}
+ </div>
+ <div class="tabpage" id="t2">
+   ${['owner','admin','teacher'].includes(admin.role)?'<div class="field"><label>Add staff note</label><textarea id="notetext"></textarea></div><button class="btn purple" id="addnote">Add note</button>':''}
+   <div style="margin-top:16px">${notes.map(n=>`<div class="listitem"><div>${esc(n.note)}</div><div class="tiny muted">${esc(n.note_type)} · ${esc(n.admin_users?.display_name||'Staff')} · ${new Date(n.created_at).toLocaleString()}</div></div>`).join('')||'<div class="muted">No notes yet</div>'}</div>
+ </div>
+ <div class="tabpage" id="t3">
+   <h3>Recent AI sessions</h3>${summaries.map(x=>`<div class="listitem"><b>${new Date(x.created_at).toLocaleDateString()}</b><div>${esc(x.summary)}</div>${x.next_session_plan?'<div class="tiny muted">Next: '+esc(x.next_session_plan)+'</div>':''}</div>`).join('')||'<div class="muted">No AI session summaries yet</div>'}
+   <h3 style="margin-top:22px">Call log</h3>${calls.map(c=>`<div class="listitem flex"><div><b>${new Date(c.started_at).toLocaleString()}</b><div class="tiny muted">${esc(c.status)} · ${c.duration_seconds!=null?secToMin(c.duration_seconds):'—'}</div></div><span class="badge right">${esc(c.access_decision||'')}</span></div>`).join('')||'<div class="muted">No calls logged yet</div>'}
+ </div>`;
+ document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab,.tabpage').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById(b.dataset.tab).classList.add('active')});
+ if(document.getElementById('saveaccess'))document.getElementById('saveaccess').onclick=()=>saveAccess(s.id,access);
+ if(document.getElementById('saveprofile'))document.getElementById('saveprofile').onclick=()=>saveProfile(s.id);
+ if(document.getElementById('addnote'))document.getElementById('addnote').onclick=()=>addNote(s.id);
+ if(document.getElementById('addphone'))document.getElementById('addphone').onclick=()=>addPhone(s.id);
+ document.querySelectorAll('.delphone').forEach(b=>b.onclick=()=>deletePhone(b.dataset.id,s.id));
+}
+async function saveAccess(id,existing){
+ const payload={access_enabled:document.getElementById('acc').value==='true',per_call_limit_seconds:minToSec(document.getElementById('percall').value),daily_limit_seconds:minToSec(document.getElementById('daily').value),monthly_limit_seconds:minToSec(document.getElementById('monthly').value)};
+ let r;
+ if(existing)r=await sb.from('ai_access').update(payload).eq('student_id',id);
+ else r=await sb.from('ai_access').insert({student_id:id,...payload,managed_by:'admin'});
+ if(r.error)return alert(r.error.message);await loadStudents();await openStudent(id);
+}
+async function saveProfile(id){
+ const payload={student_id:id,cefr_level:document.getElementById('cefr').value||null,exam_target:document.getElementById('exam').value||null,primary_objective:document.getElementById('objective').value||null,profile_summary:document.getElementById('profilesummary').value||null,updated_by:user.id};
+ const r=await sb.from('learner_profiles').upsert(payload,{onConflict:'student_id'});if(r.error)return alert(r.error.message);await openStudent(id);
+}
+async function addNote(id){const note=document.getElementById('notetext').value.trim();if(!note)return;const r=await sb.from('student_notes').insert({student_id:id,author_user_id:user.id,note});if(r.error)return alert(r.error.message);await openStudent(id)}
+async function addPhone(id){const raw=document.getElementById('newphone').value,e164=phoneNorm(raw);if(!e164)return alert('Invalid phone number');const type=document.getElementById('phonetype').value;const r=await sb.from('student_phones').insert({student_id:id,phone_e164:e164,phone_raw:raw,phone_type:type,record_source:'manual'});if(r.error)return alert(r.error.message);await openStudent(id)}
+async function deletePhone(pid,sid){if(!confirm('Remove this manual phone number?'))return;const r=await sb.from('student_phones').delete().eq('id',pid);if(r.error)return alert(r.error.message);await openStudent(sid)}
+function showAddStudent(){
+ document.getElementById('detail').innerHTML=`<div class="panelhead"><h2 style="margin:0">Add manual student</h2></div><div class="panelbody">
+ <div class="rows"><div class="field"><label>First name</label><input id="mfirst"></div><div class="field"><label>First surname</label><input id="ms1"></div><div class="field"><label>Second surname</label><input id="ms2"></div><div class="field"><label>Phone</label><input id="mphone"></div><div class="field"><label>Per-call limit (minutes)</label><input id="mlimit" type="number" min="1" value="10"></div></div>
+ <button class="btn purple" id="createmanual">Create student</button></div>`;
+ document.getElementById('createmanual').onclick=createManual;
+}
+async function createManual(){
+ const first=document.getElementById('mfirst').value.trim();if(!first)return alert('First name required');
+ const {data:s,error}=await sb.from('students').insert({record_source:'manual',first_name:first,first_surname:document.getElementById('ms1').value.trim()||null,second_surname:document.getElementById('ms2').value.trim()||null,is_adult:true}).select().single();if(error)return alert(error.message);
+ const e164=phoneNorm(document.getElementById('mphone').value);if(e164)await sb.from('student_phones').insert({student_id:s.id,phone_e164:e164,phone_raw:document.getElementById('mphone').value,phone_type:'mobile',record_source:'manual',is_primary:true});
+ await sb.from('ai_access').insert({student_id:s.id,access_enabled:true,per_call_limit_seconds:minToSec(document.getElementById('mlimit').value),managed_by:'manual'});
+ await loadStudents();selected=s.id;renderShell();await openStudent(s.id);
+}
+sb.auth.onAuthStateChange((_event,session)=>{if(!session&&!document.querySelector('.login'))loginView()});
+boot().catch(e=>loginView(e.message));
+</script>
+</body>
 </html>
