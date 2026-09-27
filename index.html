@@ -104,7 +104,7 @@ function renderList(){
 }
 async function openStudent(id){
  selected=id;renderList(); const s=students.find(x=>x.id===id); if(!s)return;
- const [p,a,lp,n,er,obj,sum,calls]=await Promise.all([
+ const [p,a,lp,n,er,obj,sum,calls,wb]=await Promise.all([
   sb.from('student_phones').select('*').eq('student_id',id).order('is_primary',{ascending:false}),
   sb.from('ai_access').select('*').eq('student_id',id).maybeSingle(),
   sb.from('learner_profiles').select('*').eq('student_id',id).maybeSingle(),
@@ -112,17 +112,38 @@ async function openStudent(id){
   sb.from('learning_errors').select('*').eq('student_id',id).order('last_seen_at',{ascending:false}),
   sb.from('learning_objectives').select('*').eq('student_id',id).order('priority'),
   sb.from('session_summaries').select('*').eq('student_id',id).order('created_at',{ascending:false}).limit(10),
-  sb.from('ai_calls').select('*').eq('student_id',id).order('started_at',{ascending:false}).limit(20)
+  sb.from('ai_calls').select('*').eq('student_id',id).order('started_at',{ascending:false}).limit(20),
+  sb.from('zoho_writeback_log').select('*').eq('student_id',id).order('requested_at',{ascending:false}).limit(5)
  ]);
- renderDetail(s,p.data||[],a.data,lp.data,n.data||[],er.data||[],obj.data||[],sum.data||[],calls.data||[]);
+ renderDetail(s,p.data||[],a.data,lp.data,n.data||[],er.data||[],obj.data||[],sum.data||[],calls.data||[],wb.data||[]);
 }
-function renderDetail(s,phones,access,profile,notes,errors,objectives,summaries,calls){
+function renderDetail(s,phones,access,profile,notes,errors,objectives,summaries,calls,writebacks){
  const zoho=s.record_source==='zoho';
+ const pendingWriteback=(writebacks||[]).find(x=>x.status==='pending'||x.status==='sent');
+ const zphone=(field)=>(phones.find(p=>p.record_source==='zoho'&&p.zoho_field_name===field)?.phone_raw||'');
  document.getElementById('detail').innerHTML=`<div class="panelhead"><div><h2 style="margin:0">${esc(fullName(s))}</h2><div class="tiny muted">${zoho?'Zoho Creator master record':'Manual Dr Watson student'} ${s.zoho_student_number?'· #'+esc(s.zoho_student_number):''}</div></div><span class="badge ${s.record_source} right">${s.record_source}</span></div>
  <div class="tabs">${['Overview','Learning','Notes','History'].map((x,i)=>`<button class="tab ${i===0?'active':''}" data-tab="t${i}">${x}</button>`).join('')}</div>
  <div class="tabpage active" id="t0">
-  ${zoho?'<div class="notice">Name, class and Zoho phone fields are mastered by Zoho Creator. The portal write-back action will be connected next; Dr Watson-specific settings can already be edited here.</div>':''}
+  ${zoho?'<div class="notice">Zoho Creator remains the master record. Changes made here are queued for Zoho first and only return to Dr Watson after Zoho confirms them.</div>':''}
+  ${pendingWriteback?`<div class="notice ok"><b>Zoho update ${esc(pendingWriteback.status)}</b><div class="tiny">Requested ${new Date(pendingWriteback.requested_at).toLocaleString()}</div></div>`:''}
   <div class="rows"><div class="info"><div class="k">Class</div><div class="v">${esc(s.current_class||'—')}</div></div><div class="info"><div class="k">Source</div><div class="v">${esc(s.record_source)}</div></div></div>
+  ${['owner','admin'].includes(admin.role)?(zoho?`<h3 style="margin-top:18px">Zoho identity & contact</h3>
+  <div class="rows">
+   <div class="field"><label>First name</label><input id="zfirst" value="${esc(s.first_name||'')}"></div>
+   <div class="field"><label>First surname</label><input id="zs1" value="${esc(s.first_surname||'')}"></div>
+   <div class="field"><label>Second surname</label><input id="zs2" value="${esc(s.second_surname||'')}"></div>
+   <div class="field"><label>Mobile</label><input id="zmobile" value="${esc(zphone('Tel_fono_m_vil'))}"></div>
+   <div class="field"><label>Home phone</label><input id="zhome" value="${esc(zphone('Tel_fono_casa'))}"></div>
+   <div class="field"><label>Work phone</label><input id="zwork" value="${esc(zphone('Tel_fono_trabajo'))}"></div>
+   <div class="field"><label>Other phone</label><input id="zother" value="${esc(zphone('Tel_fono_otro'))}"></div>
+  </div>
+  <button class="btn purple" id="savezoho">Send changes to Zoho</button>
+  <div class="source-lock">Class editing will be added once the Zoho class lookup is synchronised.</div>`:`<h3 style="margin-top:18px">Manual student identity</h3>
+  <div class="rows">
+   <div class="field"><label>First name</label><input id="mfirstedit" value="${esc(s.first_name||'')}"></div>
+   <div class="field"><label>First surname</label><input id="ms1edit" value="${esc(s.first_surname||'')}"></div>
+   <div class="field"><label>Second surname</label><input id="ms2edit" value="${esc(s.second_surname||'')}"></div>
+  </div><button class="btn purple" id="savemanualidentity">Save identity</button>`):''}
   <h3 style="margin-top:18px">Phone numbers</h3><div id="phones">${phones.map(p=>`<div class="listitem flex"><div><b>${esc(p.phone_e164)}</b><div class="tiny muted">${esc(p.phone_type)} · ${esc(p.record_source)}</div></div>${p.record_source==='manual'&&['owner','admin'].includes(admin.role)?`<button class="btn ghost small right delphone" data-id="${p.id}">Remove</button>`:''}</div>`).join('')||'<div class="muted">No numbers</div>'}</div>
   ${['owner','admin'].includes(admin.role)?'<div class="flex"><input id="newphone" placeholder="Add manual phone number"><select id="phonetype" style="max-width:120px"><option>mobile</option><option>home</option><option>work</option><option>other</option></select><button class="btn small" id="addphone">Add</button></div>':''}
   <h3 style="margin-top:18px">AI access & limits</h3>
@@ -155,7 +176,37 @@ function renderDetail(s,phones,access,profile,notes,errors,objectives,summaries,
  if(document.getElementById('saveprofile'))document.getElementById('saveprofile').onclick=()=>saveProfile(s.id);
  if(document.getElementById('addnote'))document.getElementById('addnote').onclick=()=>addNote(s.id);
  if(document.getElementById('addphone'))document.getElementById('addphone').onclick=()=>addPhone(s.id);
+ if(document.getElementById('savezoho'))document.getElementById('savezoho').onclick=()=>queueZohoEdit(s,phones);
+ if(document.getElementById('savemanualidentity'))document.getElementById('savemanualidentity').onclick=()=>saveManualIdentity(s.id);
  document.querySelectorAll('.delphone').forEach(b=>b.onclick=()=>deletePhone(b.dataset.id,s.id));
+}
+async function queueZohoEdit(s,phones){
+ const current=(field)=>(phones.find(p=>p.record_source==='zoho'&&p.zoho_field_name===field)?.phone_raw||'');
+ const changes={};
+ const add=(key,value,oldValue)=>{const v=String(value??'').trim();const o=String(oldValue??'').trim();if(v!==o)changes[key]=v;};
+ add('Nombre',document.getElementById('zfirst').value,s.first_name);
+ add('Primer_apellido',document.getElementById('zs1').value,s.first_surname);
+ add('Segundo_apellido',document.getElementById('zs2').value,s.second_surname);
+ add('Tel_fono_m_vil',document.getElementById('zmobile').value,current('Tel_fono_m_vil'));
+ add('Tel_fono_casa',document.getElementById('zhome').value,current('Tel_fono_casa'));
+ add('Tel_fono_trabajo',document.getElementById('zwork').value,current('Tel_fono_trabajo'));
+ add('Tel_fono_otro',document.getElementById('zother').value,current('Tel_fono_otro'));
+ if(!Object.keys(changes).length)return alert('No Zoho fields have changed.');
+ const r=await sb.rpc('request_zoho_writeback',{p_student_id:s.id,p_changes:changes});
+ if(r.error)return alert(r.error.message);
+ alert('Change queued for Zoho Creator. The displayed values will update after Zoho confirms the change.');
+ await openStudent(s.id);
+}
+async function saveManualIdentity(id){
+ const payload={
+  first_name:document.getElementById('mfirstedit').value.trim(),
+  first_surname:document.getElementById('ms1edit').value.trim()||null,
+  second_surname:document.getElementById('ms2edit').value.trim()||null
+ };
+ if(!payload.first_name)return alert('First name is required.');
+ const r=await sb.from('students').update(payload).eq('id',id);
+ if(r.error)return alert(r.error.message);
+ await loadStudents();await openStudent(id);
 }
 async function saveAccess(id,existing){
  const payload={access_enabled:document.getElementById('acc').value==='true',per_call_limit_seconds:minToSec(document.getElementById('percall').value),daily_limit_seconds:minToSec(document.getElementById('daily').value),monthly_limit_seconds:minToSec(document.getElementById('monthly').value)};
