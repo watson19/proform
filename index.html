@@ -165,7 +165,7 @@ function renderDetail(s,phones,access,profile,notes,errors,objectives,summaries,
    <div class="field"><label>Profile summary / foundational context</label><textarea id="profilesummary">${esc(profile?.profile_summary||'')}</textarea></div>
    ${['owner','admin','teacher'].includes(admin.role)?'<button class="btn" id="saveprofile">Save learner profile</button>':''}
    <h3 style="margin-top:22px">Objectives</h3>${objectives.map(o=>`<div class="listitem"><b>${esc(o.objective)}</b><div class="tiny muted">${esc(o.status)} · priority ${o.priority} · ${esc(o.source)}</div></div>`).join('')||'<div class="muted">No objectives yet</div>'}
-   <h3 style="margin-top:22px">Recurring errors</h3>${errors.map(e=>`<div class="listitem"><b>${esc(e.incorrect_form)} → ${esc(e.correct_form)}</b><div class="tiny muted">${esc(e.category||'')} · ${e.occurrence_count} occurrences · ${esc(e.status)}</div></div>`).join('')||'<div class="muted">No recurring errors yet</div>'}
+   <h3 style="margin-top:22px">Recurring errors</h3>${errors.map(e=>`<div class="listitem"><b>${esc(e.incorrect_form)} → ${esc(e.correct_form)}</b><div class="tiny muted">${esc(e.error_family||e.category||'Language error')} · ${e.session_count||1} session(s) · ${e.occurrence_count} occurrence(s) · ${e.successful_repetitions||0} successful follow-up(s) · ${esc(e.status)}</div></div>`).join('')||'<div class="muted">No recurring errors yet</div>'}
  </div>
  <div class="tabpage" id="t2">
    ${['owner','admin','teacher'].includes(admin.role)?`<div class="field"><label>Add staff note</label><textarea id="notetext"></textarea></div>
