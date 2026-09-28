@@ -110,7 +110,7 @@ async function openStudent(id){
   sb.from('student_phones').select('*').eq('student_id',id).order('is_primary',{ascending:false}),
   sb.from('ai_access').select('*').eq('student_id',id).maybeSingle(),
   sb.from('learner_profiles').select('*').eq('student_id',id).maybeSingle(),
-  sb.from('student_notes').select('*,admin_users(display_name)').eq('student_id',id).order('created_at',{ascending:false}),
+  sb.from('student_notes').select('*').eq('student_id',id).order('created_at',{ascending:false}),
   sb.from('learning_errors').select('*').eq('student_id',id).order('last_seen_at',{ascending:false}),
   sb.from('learning_objectives').select('*').eq('student_id',id).order('priority'),
   sb.from('session_summaries').select('*').eq('student_id',id).order('created_at',{ascending:false}).limit(10),
@@ -118,6 +118,7 @@ async function openStudent(id){
   sb.from('zoho_writeback_log').select('*').eq('student_id',id).order('requested_at',{ascending:false}).limit(5),
   sb.from('zoho_student_records').select('*').eq('student_id',id).order('current_class')
  ]);
+ if(n.error)alert('Could not load student notes: '+n.error.message);
  renderDetail(s,p.data||[],a.data,lp.data,n.data||[],er.data||[],obj.data||[],sum.data||[],calls.data||[],wb.data||[],zr.data||[]);
 }
 function renderDetail(s,phones,access,profile,notes,errors,objectives,summaries,calls,writebacks,zohoRecords){
@@ -167,8 +168,10 @@ function renderDetail(s,phones,access,profile,notes,errors,objectives,summaries,
    <h3 style="margin-top:22px">Recurring errors</h3>${errors.map(e=>`<div class="listitem"><b>${esc(e.incorrect_form)} → ${esc(e.correct_form)}</b><div class="tiny muted">${esc(e.category||'')} · ${e.occurrence_count} occurrences · ${esc(e.status)}</div></div>`).join('')||'<div class="muted">No recurring errors yet</div>'}
  </div>
  <div class="tabpage" id="t2">
-   ${['owner','admin','teacher'].includes(admin.role)?'<div class="field"><label>Add staff note</label><textarea id="notetext"></textarea></div><button class="btn purple" id="addnote">Add note</button>':''}
-   <div style="margin-top:16px">${notes.map(n=>`<div class="listitem"><div>${esc(n.note)}</div><div class="tiny muted">${esc(n.note_type)} · ${esc(n.admin_users?.display_name||'Staff')} · ${new Date(n.created_at).toLocaleString()}</div></div>`).join('')||'<div class="muted">No notes yet</div>'}</div>
+   ${['owner','admin','teacher'].includes(admin.role)?`<div class="field"><label>Add staff note</label><textarea id="notetext"></textarea></div>
+   <label class="tiny" style="display:flex;align-items:center;gap:8px;margin:8px 0 12px"><input id="notepinned" type="checkbox" checked style="width:auto"> Use this note in Dr Watson AI context</label>
+   <div class="flex"><button class="btn purple" id="addnote">Add note</button><span id="notestatus" class="tiny muted"></span></div>`:''}
+   <div style="margin-top:16px">${notes.map(n=>`<div class="listitem"><div>${esc(n.note)}</div><div class="flex" style="margin-top:8px"><span class="badge ${n.pinned?'on':'off'}">${n.pinned?'AI context':'Staff only'}</span>${['owner','admin'].includes(admin.role)||(['teacher'].includes(admin.role)&&n.author_user_id===user.id)?`<button class="btn ghost small pinnote right" data-id="${n.id}" data-pinned="${n.pinned?'true':'false'}">${n.pinned?'Remove from AI':'Use in AI'}</button>`:''}</div><div class="tiny muted" style="margin-top:6px">${esc(n.note_type)} · Staff · ${new Date(n.created_at).toLocaleString()}</div></div>`).join('')||'<div class="muted">No notes yet</div>'}</div>
  </div>
  <div class="tabpage" id="t3">
    <h3>Recent AI sessions</h3>${summaries.map(x=>`<div class="listitem"><b>${new Date(x.created_at).toLocaleDateString()}</b><div>${esc(x.summary)}</div>${x.next_session_plan?'<div class="tiny muted">Next: '+esc(x.next_session_plan)+'</div>':''}</div>`).join('')||'<div class="muted">No AI session summaries yet</div>'}
@@ -178,6 +181,7 @@ function renderDetail(s,phones,access,profile,notes,errors,objectives,summaries,
  if(document.getElementById('saveaccess'))document.getElementById('saveaccess').onclick=()=>saveAccess(s.id,access);
  if(document.getElementById('saveprofile'))document.getElementById('saveprofile').onclick=()=>saveProfile(s.id);
  if(document.getElementById('addnote'))document.getElementById('addnote').onclick=()=>addNote(s.id);
+ document.querySelectorAll('.pinnote').forEach(b=>b.onclick=()=>toggleNotePin(b.dataset.id,s.id,b.dataset.pinned!=='true'));
  if(document.getElementById('addphone'))document.getElementById('addphone').onclick=()=>addPhone(s.id);
  if(document.getElementById('savezoho'))document.getElementById('savezoho').onclick=()=>queueZohoEdit(s,phones);
  if(document.getElementById('savemanualidentity'))document.getElementById('savemanualidentity').onclick=()=>saveManualIdentity(s.id);
@@ -252,7 +256,22 @@ async function saveProfile(id){
  const payload={student_id:id,cefr_level:document.getElementById('cefr').value||null,exam_target:document.getElementById('exam').value||null,primary_objective:document.getElementById('objective').value||null,profile_summary:document.getElementById('profilesummary').value||null,updated_by:user.id};
  const r=await sb.from('learner_profiles').upsert(payload,{onConflict:'student_id'});if(r.error)return alert(r.error.message);await openStudent(id);
 }
-async function addNote(id){const note=document.getElementById('notetext').value.trim();if(!note)return;const r=await sb.from('student_notes').insert({student_id:id,author_user_id:user.id,note});if(r.error)return alert(r.error.message);await openStudent(id)}
+async function addNote(id){
+ const note=document.getElementById('notetext').value.trim();if(!note)return;
+ const btn=document.getElementById('addnote');if(btn?.disabled)return;
+ const pinned=document.getElementById('notepinned')?.checked!==false;
+ if(btn){btn.disabled=true;btn.textContent='Saving…'}
+ const r=await sb.from('student_notes').insert({student_id:id,author_user_id:user.id,note,pinned}).select('id').single();
+ if(r.error){if(btn){btn.disabled=false;btn.textContent='Add note'}return alert(r.error.message)}
+ await openStudent(id);
+ document.querySelector('[data-tab="t2"]')?.click();
+}
+async function toggleNotePin(noteId,studentId,pinned){
+ const r=await sb.from('student_notes').update({pinned}).eq('id',noteId);
+ if(r.error)return alert(r.error.message);
+ await openStudent(studentId);
+ document.querySelector('[data-tab="t2"]')?.click();
+}
 async function addPhone(id){const raw=document.getElementById('newphone').value,e164=phoneNorm(raw);if(!e164)return alert('Invalid phone number');const type=document.getElementById('phonetype').value;const r=await sb.from('student_phones').insert({student_id:id,phone_e164:e164,phone_raw:raw,phone_type:type,record_source:'manual'});if(r.error)return alert(r.error.message);await openStudent(id)}
 async function deletePhone(pid,sid){if(!confirm('Remove this manual phone number?'))return;const r=await sb.from('student_phones').delete().eq('id',pid);if(r.error)return alert(r.error.message);await openStudent(sid)}
 async function showSettings(){
