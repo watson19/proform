@@ -87,12 +87,13 @@ async function loadStudents(){
 function renderShell(){
  const active=[...accessMap.values()].filter(x=>x.access_enabled).length;
  const manual=students.filter(x=>x.record_source==='manual').length;
- app.innerHTML=`<div class="top"><div class="brand"><span>Dr Watson</span> <span>Admin</span></div><span class="badge">${esc(admin.role)}</span><div class="spacer"></div><span class="tiny muted">${esc(user.email)}</span>${admin.role==='owner'?'<button class="btn ghost small" id="settings">Settings</button>':''}<button class="btn ghost small" id="logout">Sign out</button></div>
+ app.innerHTML=`<div class="top"><div class="brand"><span>Dr Watson</span> <span>Admin</span></div><span class="badge">${esc(admin.role)}</span><div class="spacer"></div><span class="tiny muted">${esc(user.email)}</span><button class="btn ghost small" id="refreshdata">Refresh</button>${admin.role==='owner'?'<button class="btn ghost small" id="settings">Settings</button>':''}<button class="btn ghost small" id="logout">Sign out</button></div>
  <div class="wrap"><div class="cards"><div class="stat"><span class="muted tiny">Students</span><b>${students.length}</b></div><div class="stat"><span class="muted tiny">AI access enabled</span><b>${active}</b></div><div class="stat"><span class="muted tiny">Zoho synced</span><b>${students.length-manual}</b></div><div class="stat"><span class="muted tiny">Manual</span><b>${manual}</b></div></div>
  <div class="grid"><div class="panel"><div class="panelhead"><input id="search" placeholder="Search students"><button class="btn purple small" id="add">+ Add</button></div><div id="studentList"></div></div>
  <div class="panel" id="detail"><div class="empty">Select a student</div></div></div></div>`;
  document.getElementById('logout').onclick=async()=>{await sb.auth.signOut();loginView()};
  if(document.getElementById('settings'))document.getElementById('settings').onclick=showSettings;
+ if(document.getElementById('refreshdata'))document.getElementById('refreshdata').onclick=refreshPortalData;
  document.getElementById('search').oninput=renderList;
  document.getElementById('add').onclick=showAddStudent;
  renderList();
@@ -307,6 +308,18 @@ async function saveSettings(){
  alert('Dr Watson settings saved.');
  await showSettings();
 }
+async function refreshPortalData(){
+ const current=selected;
+ await loadStudents();
+ renderList();
+ if(current&&students.some(x=>x.id===current))await openStudent(current);
+}
+window.addEventListener('focus',()=>{
+ if(user&&admin)refreshPortalData().catch(()=>{});
+});
+document.addEventListener('visibilitychange',()=>{
+ if(document.visibilityState==='visible'&&user&&admin)refreshPortalData().catch(()=>{});
+});
 function showAddStudent(){
  document.getElementById('detail').innerHTML=`<div class="panelhead"><h2 style="margin:0">Add manual student</h2></div><div class="panelbody">
  <div class="rows"><div class="field"><label>First name</label><input id="mfirst"></div><div class="field"><label>First surname</label><input id="ms1"></div><div class="field"><label>Second surname</label><input id="ms2"></div><div class="field"><label>Phone</label><input id="mphone"></div><div class="field"><label>Per-call limit (minutes)</label><input id="mlimit" type="number" min="1" value="10"></div></div>
