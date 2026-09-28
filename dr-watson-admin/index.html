@@ -108,7 +108,7 @@ async function openStudent(id){
   sb.from('student_phones').select('*').eq('student_id',id).order('is_primary',{ascending:false}),
   sb.from('ai_access').select('*').eq('student_id',id).maybeSingle(),
   sb.from('learner_profiles').select('*').eq('student_id',id).maybeSingle(),
-  sb.from('student_notes').select('*,admin_users(display_name)').eq('student_id',id).order('created_at',{ascending:false}),
+  sb.from('student_notes').select('*').eq('student_id',id).order('created_at',{ascending:false}),
   sb.from('learning_errors').select('*').eq('student_id',id).order('last_seen_at',{ascending:false}),
   sb.from('learning_objectives').select('*').eq('student_id',id).order('priority'),
   sb.from('session_summaries').select('*').eq('student_id',id).order('created_at',{ascending:false}).limit(10),
